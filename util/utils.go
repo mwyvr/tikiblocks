@@ -21,22 +21,25 @@ type Change struct {
 
 type configStruct struct {
 	Separator string
+	Command   string // somebar, for example, requires "status" as a command
 	Actions   []map[string]interface{}
 }
-//Based on "timer" prorty from config file
-//Schedule gothread that will ping other gothreads via send channel
+
+// Based on "timer" prorty from config file
+// Schedule gothread that will ping other gothreads via send channel
 func Schedule(send chan bool, duration string) {
 	u, err := time.ParseDuration(duration)
 	if err == nil {
-		for range time.Tick(u){
+		for range time.Tick(u) {
 			send <- true
 		}
 	} else {
 		log.Println("Couldn't set a scheduler due to improper time format: " + duration)
-		send <-false
+		send <- false
 	}
 }
-//Run any arbitrary POSIX shell command
+
+// Run any arbitrary POSIX shell command
 func RunCmd(blockId int, send chan Change, rec chan bool, action map[string]interface{}) {
 	cmdStr := action["command"].(string)
 	run := true
@@ -48,11 +51,12 @@ func RunCmd(blockId int, send chan Change, rec chan bool, action map[string]inte
 		} else {
 			send <- Change{blockId, err.Error(), false}
 		}
-		//Block until other thread will ping you
+		// Block until other thread will ping you
 		run = <-rec
 	}
 }
-//Create a channel that captures all 34-64 signals
+
+// Create a channel that captures all 34-64 signals
 func GetSIGRTchannel() chan os.Signal {
 	sigChan := make(chan os.Signal, 1)
 	sigArr := make([]os.Signal, 31)
@@ -62,7 +66,8 @@ func GetSIGRTchannel() chan os.Signal {
 	signal.Notify(sigChan, sigArr...)
 	return sigChan
 }
-//Read config and map it to configStruct
+
+// Read config and map it to configStruct
 func ReadConfig(configName string) (config configStruct) {
 	var confDir string
 	confDir, err := os.UserConfigDir()
@@ -71,7 +76,7 @@ func ReadConfig(configName string) (config configStruct) {
 	}
 
 	var file *os.File
-	file, err = os.Open(filepath.Join(confDir,configName))
+	file, err = os.Open(filepath.Join(confDir, configName))
 	defer file.Close()
 	if err != nil {
 		log.Fatal(err)
