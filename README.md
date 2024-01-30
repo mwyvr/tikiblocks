@@ -1,5 +1,10 @@
-# Goblocks
-Goblocks is a [dwm](https://dwm.suckless.org/) status bar program partially inspired by [dwmblocks](https://github.com/torrinfail/dwmblocks).
+# tikiblocks 
+
+tikiblocks is a fork of Goblocks, a [dwm](https://dwm.suckless.org/) status bar program partially inspired by [dwmblocks](https://github.com/torrinfail/dwmblocks).
+
+tikiblocks is not dependent on X or Wayland; status text is output to stdout only.j
+
+**JAN 2024 - new fork, work in progress, nothing to see yet.**
 
 ![Goblocks in action](https://i.imgur.com/kH1G8tr.png)
 
