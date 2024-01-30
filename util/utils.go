@@ -2,11 +2,12 @@ package util
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"os/exec"
 	"os/signal"
+	"path"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -19,10 +20,11 @@ type Change struct {
 	Success bool
 }
 
-type configStruct struct {
-	Separator string
-	Command   string // somebar, for example, requires "status" as a command
-	Actions   []map[string]interface{}
+type Config struct {
+	Separator  string
+	BarType    string // somebar, stdout; mandatory
+	OutPutFile *os.File
+	Actions    []map[string]interface{}
 }
 
 // Based on "timer" prorty from config file
@@ -68,7 +70,7 @@ func GetSIGRTchannel() chan os.Signal {
 }
 
 // Read config and map it to configStruct
-func ReadConfig(configName string) (config configStruct) {
+func ReadConfig(configName string) (config Config) {
 	var confDir string
 	confDir, err := os.UserConfigDir()
 	if err != nil {
@@ -76,14 +78,14 @@ func ReadConfig(configName string) (config configStruct) {
 	}
 
 	var file *os.File
-	file, err = os.Open(filepath.Join(confDir, configName))
+	file, err = os.Open(filepath.Join(confDir, "tikiblocks", configName))
 	defer file.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	var byteValue []byte
-	byteValue, err = ioutil.ReadAll(file)
+	byteValue, err = io.ReadAll(file)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -91,5 +93,22 @@ func ReadConfig(configName string) (config configStruct) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	switch config.BarType {
+	case "somebar":
+		runtimeDir := os.Getenv("XDG_RUNTIME_DIR")
+		if runtimeDir == "" {
+			log.Fatal("XDG_RUNTIME_DIR not defined. dbus running?")
+		}
+		outputFn := path.Join(runtimeDir, "somebar-0") // will fail on a multi-user system
+		config.OutPutFile, err = os.OpenFile(outputFn, os.O_APPEND|os.O_WRONLY, 0x777)
+		if err != nil {
+			log.Fatal(err)
+		}
+	case "stdout":
+		config.OutPutFile = os.Stdout
+	default:
+		log.Fatal("configuration file error: BarType must be defined as one of: somebar, stdout")
+	}
+
 	return config
 }
