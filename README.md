@@ -1,15 +1,29 @@
 # tikiblocks 
 
-tikiblocks is a fork of Goblocks, a [dwm](https://dwm.suckless.org/) status bar program partially inspired by [dwmblocks](https://github.com/torrinfail/dwmblocks).
+tikiblocks is a fork of Goblocks, a [dwm](https://dwm.suckless.org/) status bar
+program partially inspired by
+[dwmblocks](https://github.com/torrinfail/dwmblocks). tikiblocks is not
+dependent on X or Wayland; status text is output to stdout or named pipes only.
 
-tikiblocks is not dependent on X or Wayland; status text is output to stdout only.j
+**JAN 2024 - new fork, work in progress. Expect changes and improvements. **
 
-**JAN 2024 - new fork, work in progress, nothing to see yet.**
+## Example Use
+
+### dwl with somebar
+
+Currently I'm starting `tikiblocks` as an "autostart" with a patched version of `dwl`.
+
+    dwl -s somebar
+
+It may be necessary to increase the time delay to account for dwl and somebar
+startup if you are running `tikiblocks` in a shell script before dwl launch.
 
 ![Goblocks in action](https://i.imgur.com/kH1G8tr.png)
 
-It is lightweight, fast, multithreaded, well(-ish) documented and easily customizable. It is also one of very few status bars done correctly. Most of them "naively"
-scan for changes every 1s or so, whereas goblocks only updates when there are updates to be done.
+It is lightweight, fast, multithreaded, well(-ish) documented and easily
+customizable. It is also one of very few status bars done correctly. Most of
+them "naively" scan for changes every 1s or so, whereas goblocks only updates
+when there are updates to be done.
 
 ## Installation
 Pull this repo and run:
