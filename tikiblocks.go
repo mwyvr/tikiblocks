@@ -16,7 +16,7 @@ var (
 )
 
 func main() {
-	config := util.ReadConfig("goblocks.json")
+	config := util.ReadConfig("tikiblocks.json")
 	channels = make([]chan bool, len(config.Actions))
 	// recChannel is common for gothreads contributing to status bar
 	recChannel := make(chan util.Change)
