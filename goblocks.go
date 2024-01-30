@@ -1,35 +1,27 @@
 package main
 
 import (
-	"goblocks/util"
+	"fmt"
 	"log"
 	"os"
 	"strings"
-	"github.com/BurntSushi/xgb"
-	"github.com/BurntSushi/xgb/xproto"
+	"tikiblocks/util"
 )
 
 var (
 	blocks    []string
+	oldstatus string
 	channels  []chan bool
 	signalMap map[string]int = make(map[string]int)
 )
 
 func main() {
-	// establish connection to X server
-	x, err := xgb.NewConn()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer x.Close()
-	root := xproto.Setup(x).DefaultScreen(x).Root
-
 	config := util.ReadConfig("goblocks.json")
 	channels = make([]chan bool, len(config.Actions))
-	//recChannel is common for gothreads contributing to status bar
+	// recChannel is common for gothreads contributing to status bar
 	recChannel := make(chan util.Change)
 	for i, action := range config.Actions {
-		//Assign a cell for each separator/prefix/action/suffix
+		// Assign a cell for each separator/prefix/action/suffix
 		if config.Separator != "" {
 			blocks = append(blocks, config.Separator)
 		}
@@ -41,7 +33,7 @@ func main() {
 		if value, ok := action["suffix"]; ok {
 			blocks = append(blocks, value.(string))
 		}
-		//Create an unique channel for each action
+		// Create an unique channel for each action
 		channels[i] = make(chan bool)
 		signalMap["signal "+action["updateSignal"].(string)] = i
 		if (action["command"].(string))[0] == '#' {
@@ -55,9 +47,9 @@ func main() {
 		}
 	}
 	go handleSignals(util.GetSIGRTchannel())
-	//start event loop
+	// start event loop
 	for {
-		//Block until some gothread has an update
+		// Block until some gothread has an update
 		res := <-recChannel
 		if res.Success {
 			blocks[res.BlockId] = res.Data
@@ -65,10 +57,11 @@ func main() {
 			log.Println(res.Data)
 			blocks[res.BlockId] = "ERROR"
 		}
-		updateBar(x, root)
+		updateBar(config.Command)
 	}
 }
-//Goroutine that pings a channel according to received signal
+
+// Goroutine that pings a channel according to received signal
 func handleSignals(rec chan os.Signal) {
 	for {
 		sig := <-rec
@@ -77,11 +70,21 @@ func handleSignals(rec chan os.Signal) {
 		}
 	}
 }
-//Craft status text out of blocks data
-func updateBar(conn *xgb.Conn, rootWindow xproto.Window) {
+
+// Craft status text out of blocks data
+func updateBar(cmd string) {
 	var builder strings.Builder
+	var status string
+	if cmd != "" {
+		builder.WriteString(cmd)
+	}
 	for _, s := range blocks {
 		builder.WriteString(s)
 	}
-	xproto.ChangeProperty(conn, xproto.PropModeReplace, rootWindow, xproto.AtomWmName, xproto.AtomString, 8, uint32(builder.Len()), []byte(builder.String()))
+	builder.WriteString("\n")
+	status = builder.String()
+	if oldstatus != status {
+		fmt.Fprint(os.Stdout, builder.String())
+		oldstatus = status
+	}
 }
