@@ -57,7 +57,7 @@ func main() {
 			log.Println(res.Data)
 			blocks[res.BlockId] = "ERROR"
 		}
-		updateBar(config.Command)
+		updateBar(config)
 	}
 }
 
@@ -72,11 +72,11 @@ func handleSignals(rec chan os.Signal) {
 }
 
 // Craft status text out of blocks data
-func updateBar(cmd string) {
+func updateBar(cfg util.Config) {
 	var builder strings.Builder
 	var status string
-	if cmd != "" {
-		builder.WriteString(cmd)
+	if cfg.BarType == "somebar" {
+		builder.WriteString("status")
 	}
 	for _, s := range blocks {
 		builder.WriteString(s)
@@ -84,7 +84,7 @@ func updateBar(cmd string) {
 	builder.WriteString("\n")
 	status = builder.String()
 	if oldstatus != status {
-		fmt.Fprint(os.Stdout, builder.String())
+		fmt.Fprint(cfg.OutPutFile, builder.String())
 		oldstatus = status
 	}
 }
