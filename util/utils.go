@@ -100,7 +100,15 @@ func ReadConfig(configName string) (config Config) {
 			log.Fatal("XDG_RUNTIME_DIR not defined. dbus running?")
 		}
 		outputFn := path.Join(runtimeDir, "somebar-0") // will fail on a multi-user system
-		config.OutPutFile, err = os.OpenFile(outputFn, os.O_APPEND|os.O_WRONLY, 0x777)
+		for i := 0; i < 100; i++ {
+			config.OutPutFile, err = os.OpenFile(outputFn, os.O_APPEND|os.O_WRONLY, 0x777)
+			if err != nil {
+				// somebar may not be up yet
+				time.Sleep(100 * time.Millisecond)
+			} else {
+				break
+			}
+		}
 		if err != nil {
 			log.Fatal(err)
 		}
