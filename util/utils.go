@@ -79,10 +79,10 @@ func ReadConfig(configName string) (config Config) {
 
 	var file *os.File
 	file, err = os.Open(filepath.Join(confDir, "tikiblocks", configName))
-	defer file.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer file.Close()
 
 	var byteValue []byte
 	byteValue, err = io.ReadAll(file)
