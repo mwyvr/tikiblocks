@@ -1,22 +1,42 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
 	"strings"
-	"tikiblocks/util"
+
+	"github.com/mwyvr/tikiblocks/util"
+
+	"github.com/jezek/xgb"
+	"github.com/jezek/xgb/xproto"
 )
 
 var (
 	blocks    []string
-	oldstatus string
 	channels  []chan bool
 	signalMap map[string]int = make(map[string]int)
+	outputTo  string         = "" // stdout, xsetroot, somebar
 )
 
+func init() {
+	flag.StringVar(&outputTo, "o", outputTo, "output to: stdout, xroot, somebar")
+}
+
 func main() {
+	// setup bar format and output method
 	config := util.ReadConfig("tikiblocks.json")
+	flag.Parse()
+	outputTo := strings.ToLower(outputTo)
+	if config.BarType == "" { // default to stdout
+		config.BarType = "stdout"
+	}
+	if outputTo != "" {
+		config.BarType = outputTo
+	}
+	config.OutputFile = util.SetOutput(config.BarType)
+
 	channels = make([]chan bool, len(config.Actions))
 	// recChannel is common for gothreads contributing to status bar
 	recChannel := make(chan util.Change)
@@ -47,6 +67,7 @@ func main() {
 		}
 	}
 	go handleSignals(util.GetSIGRTchannel())
+	oldstatus := ""
 	// start event loop
 	for {
 		// Block until some gothread has an update
@@ -57,7 +78,7 @@ func main() {
 			log.Println(res.Data)
 			blocks[res.BlockId] = "ERROR"
 		}
-		updateBar(config)
+		oldstatus = updateBar(config, oldstatus)
 	}
 }
 
@@ -72,7 +93,7 @@ func handleSignals(rec chan os.Signal) {
 }
 
 // Craft status text out of blocks data
-func updateBar(cfg util.Config) {
+func updateBar(cfg util.Config, oldstatus string) string {
 	var builder strings.Builder
 	var status string
 	if cfg.BarType == "somebar" {
@@ -84,7 +105,23 @@ func updateBar(cfg util.Config) {
 	builder.WriteString("\n")
 	status = builder.String()
 	if oldstatus != status {
-		fmt.Fprint(cfg.OutPutFile, builder.String())
-		oldstatus = status
+		fmt.Fprint(cfg.OutputFile, status)
 	}
+	return status
+}
+
+type xRootWriter interface {
+	Write(p []byte) (n int, err error)
+}
+
+type xRoot struct{}
+
+func newXRoot() {
+	x, err := xgb.NewConn()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer x.Close()
+	root := xproto.Setup(x).DefaultScreen(x).Root
+	_ = root
 }

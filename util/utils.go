@@ -12,6 +12,9 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/jezek/xgb"
+	"github.com/jezek/xgb/xproto"
 )
 
 type Change struct {
@@ -22,8 +25,8 @@ type Change struct {
 
 type Config struct {
 	Separator  string
-	BarType    string // somebar, stdout; mandatory
-	OutPutFile *os.File
+	BarType    string // stdout, stderr, xsetroot, somebar
+	OutputFile io.Writer
 	Actions    []map[string]interface{}
 }
 
@@ -93,30 +96,67 @@ func ReadConfig(configName string) (config Config) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	switch config.BarType {
-	case "somebar":
-		runtimeDir := os.Getenv("XDG_RUNTIME_DIR")
-		if runtimeDir == "" {
-			log.Fatal("XDG_RUNTIME_DIR not defined. dbus running?")
-		}
-		outputFn := path.Join(runtimeDir, "somebar-0") // will fail on a multi-user system
-		for i := 0; i < 100; i++ {
-			config.OutPutFile, err = os.OpenFile(outputFn, os.O_APPEND|os.O_WRONLY, 0x777)
-			if err != nil {
-				// somebar may not be up yet
-				time.Sleep(100 * time.Millisecond)
-			} else {
-				break
-			}
-		}
-		if err != nil {
-			log.Fatal(err)
-		}
-	case "stdout":
-		config.OutPutFile = os.Stdout
-	default:
-		log.Fatal("configuration file error: BarType must be defined as one of: somebar, stdout")
-	}
-
 	return config
+}
+
+type xRootWriter struct {
+	Connection *xgb.Conn
+	Root       xproto.Window
+}
+
+func (xw *xRootWriter) Write(barText []byte) (n int, err error) {
+	length := len(barText)
+	xproto.ChangeProperty(xw.Connection, xproto.PropModeReplace, xw.Root, xproto.AtomWmName, xproto.AtomString, 8, uint32(length), barText)
+	return length, nil
+}
+
+func newXRootWriter() *xRootWriter {
+	x, err := xgb.NewConn()
+	if err != nil {
+		log.Fatal(err)
+	}
+	root := xproto.Setup(x).DefaultScreen(x).Root
+
+	return &xRootWriter{
+		Connection: x,
+		Root:       root,
+	}
+}
+
+func newSomebarWriter() io.Writer {
+	var somebar *os.File
+	runtimeDir := os.Getenv("XDG_RUNTIME_DIR")
+	if runtimeDir == "" {
+		log.Fatal("XDG_RUNTIME_DIR not defined. dbus running?")
+	}
+	outputFn := path.Join(runtimeDir, "somebar-0")
+	for i := 0; i < 100; i++ {
+		somebar, err := os.OpenFile(outputFn, os.O_APPEND|os.O_WRONLY, 0x777)
+		if err != nil {
+			// somebar may not be up yet
+			time.Sleep(10 * time.Millisecond)
+		} else {
+			return somebar
+		}
+	}
+	if somebar == nil {
+		log.Fatal("Unable to establish connection with somebar")
+	}
+	return somebar
+}
+
+func SetOutput(fname string) io.Writer {
+	switch fname {
+	case "stdout":
+		return os.Stdout
+	case "stderr":
+		return os.Stderr
+	case "xsetroot":
+		return newXRootWriter()
+	case "somebar":
+		return newSomebarWriter()
+	default:
+		log.Fatal("Output must be one of stdout, stderr, xsetroot, somebar", fname)
+	}
+	return nil
 }
