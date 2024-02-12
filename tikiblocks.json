@@ -1,41 +1,45 @@
 {
-	"separator": " | ",
+	"separator": "  ",
+    "barType": "somebar",
 	"actions": 
 	[
-		{
+        {
 			"updateSignal": "39",
-			"command": "(sleep 5 ; curl \"wttr.in\/London?format=3\")",		
-			"timer": "45m"
+			"command": "wxo -lat 49.123 -long -123.78",		
+			"timer": "10m"
 		},
 		{
-			"prefix": "🗓 ",
-			"updateSignal": "35",
-			"command": "#Date",		
-			"format": "Monday 02/01/2006 15:04:05",		
-			"timer": "1s"
-		},
-		{
-			"prefix": "🔊 ",
-			"updateSignal": "36",
-			"command": "amixer get Master | awk ' \/%\/ {print $5 $6}' | head -1 | sed -e 's\/]\\[\/ \/g'",
-			"timer": "0"
-		},
-		{
-			"prefix": "Mem: ",
+			"prefix": "  ",
 			"updateSignal": "37",
-			"command": "#Memory",
-			"suffix": "%",
-			"format": "%.2f",		
-			"timer": "2s"
+			"command": "#MemoryUsed",
+			"suffix": "G",
+			"format": "%.2f/%.0f",		
+			"timer": "10s"
 		},
 		{
-			"prefix": "CPU: ",
+			"prefix": "󱐋 ",
 			"updateSignal": "38",
 			"command": "#Cpu",
 			"suffix": "%",
 			"format": "%.2f",		
-			"timer": "2s"
+			"timer": "5s"
+		},
+        {
+			"updateSignal": "40",
+			"command": "(wpctl get-volume @DEFAULT_AUDIO_SINK@ | cut -d ' ' -f 3 | sed  's/^$/󰕾/;s/\\[MUTED\\]/󰝟/' && kill -40 $(pidof tikiblocks))",
+			"timer": "0"
+		},
+        {
+			"updateSignal": "41",
+            "command": "(nmcli -t -f TYPE,STATE,CONNECTION -m tab dev | grep -v externally | sed -r 's/^ethernet:disconnected.*/󰲛/;s/^ethernet:connected:(.*)/󰛳 \\1/;s/^wifi:connected:(.?)/ \\1/;s/^wifi:unavailable.*/󰖪/' && kill -41 $(pidof tikiblocks))",
+			"timer": "0"
+		},
+		{
+			"prefix": " ",
+			"updateSignal": "35",
+			"command": "#Date",		
+			"format": "Monday Jan 2 15:04",		
+			"timer": "1s"
 		}
 	]
-
 }
