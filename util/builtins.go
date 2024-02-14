@@ -71,7 +71,7 @@ func MemoryUsed(blockId int, send chan Change, rec chan bool, action map[string]
 	run := true
 	for run {
 		v, _ := mem.VirtualMemory()
-		send <- Change{blockId, fmt.Sprintf(action["format"].(string), float64(v.Used)/1000000000, float64(v.Available)/1000000000), true}
+		send <- Change{blockId, fmt.Sprintf(action["format"].(string), float64(v.Used)/1000000000, float64(v.Total)/1000000000), true}
 		// Block until other thread will ping you
 		run = <-rec
 	}
