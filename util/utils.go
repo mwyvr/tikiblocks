@@ -184,7 +184,7 @@ func HumanizeDuration(d time.Duration) string {
 		fmt.Fprintf(&s, "%dh ", hour)
 	}
 	fmt.Fprintf(&s, "%dm ", minute)
-	if hour == 0 && second > 0 {
+	if day == 0 && hour == 0 && minute == 0 {
 		fmt.Fprintf(&s, "%ds", second)
 	}
 	return s.String()
