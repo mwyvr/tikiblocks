@@ -25,5 +25,5 @@ uninstall:
 	rm -f ${HOME}/go/bin/tikiblocks
 
 run: build
-	./tikiblocks
+	./tikiblocks -o xprop
 

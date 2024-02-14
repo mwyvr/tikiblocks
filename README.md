@@ -2,22 +2,20 @@
 
 tikiblocks is a fork of Goblocks, a [dwm](https://dwm.suckless.org/) status bar
 program partially inspired by
-[dwmblocks](https://github.com/torrinfail/dwmblocks). tikiblocks is not
-dependent on X or Wayland; status text is output to stdout or named pipes only.
+[dwmblocks](https://github.com/torrinfail/dwmblocks). 
 
-**JAN 2024 - new fork, work in progress. Expect changes and improvements. **
+tikiblocks outputs status text to one of: `stdout`, `stderr`, `xprop` (for dwm)
+and `somebar` (a named pipe).
+
+Feb 2024: Adding new functionality to the original goblocks code.
 
 ## Example Use
 
-### dwl with somebar
+    tikiblocks -o stdout
+    tikiblocks -o xprop
+    tikiblocks -o somebar
 
-Currently I'm starting `tikiblocks` as an "autostart" with a patched version of `dwl`.
-
-    dwl -s somebar
-
-It may be necessary to increase the time delay to account for dwl and somebar
-startup if you are running `tikiblocks` in a shell script before dwl launch.
-
+## Original README:
 ![Goblocks in action](https://i.imgur.com/kH1G8tr.png)
 
 It is lightweight, fast, multithreaded, well(-ish) documented and easily

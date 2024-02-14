@@ -8,20 +8,17 @@ import (
 	"strings"
 
 	"github.com/mwyvr/tikiblocks/util"
-
-	"github.com/jezek/xgb"
-	"github.com/jezek/xgb/xproto"
 )
 
 var (
 	blocks    []string
 	channels  []chan bool
 	signalMap map[string]int = make(map[string]int)
-	outputTo  string         = "" // stdout, xsetroot, somebar
+	outputTo  string         = "" // stdout, xprop, somebar
 )
 
 func init() {
-	flag.StringVar(&outputTo, "o", outputTo, "output to: stdout, xroot, somebar")
+	flag.StringVar(&outputTo, "o", outputTo, "output to: stdout, xprop, somebar")
 }
 
 func main() {
@@ -102,26 +99,12 @@ func updateBar(cfg util.Config, oldstatus string) string {
 	for _, s := range blocks {
 		builder.WriteString(s)
 	}
-	builder.WriteString("\n")
+	if cfg.BarType != "xprop" {
+		builder.WriteString("\n")
+	}
 	status = builder.String()
 	if oldstatus != status {
 		fmt.Fprint(cfg.OutputFile, status)
 	}
 	return status
-}
-
-type xRootWriter interface {
-	Write(p []byte) (n int, err error)
-}
-
-type xRoot struct{}
-
-func newXRoot() {
-	x, err := xgb.NewConn()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer x.Close()
-	root := xproto.Setup(x).DefaultScreen(x).Root
-	_ = root
 }
