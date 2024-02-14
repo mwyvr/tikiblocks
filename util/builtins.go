@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/host"
+	"github.com/shirou/gopsutil/load"
 	"github.com/shirou/gopsutil/mem"
 )
 
@@ -17,6 +19,8 @@ var FunctionMap = map[string]func(blockId int, send chan Change, rec chan bool, 
 	"#Memory":     Memory,
 	"#MemoryUsed": MemoryUsed,
 	"#Cpu":        Cpu,
+	"#Load":       Load,
+	"#Uptime":     Uptime,
 }
 
 // Update time according to "format" property
@@ -24,6 +28,28 @@ func Date(blockId int, send chan Change, rec chan bool, action map[string]interf
 	run := true
 	for run {
 		send <- Change{blockId, time.Now().Format(action["format"].(string)), true}
+		// Block until other thread will ping you
+		run = <-rec
+	}
+}
+
+// Load returns the current 1, 5, 15 minute load averages
+func Load(blockId int, send chan Change, rec chan bool, action map[string]interface{}) {
+	run := true
+	for run {
+		v, _ := load.Avg()
+		send <- Change{blockId, fmt.Sprintf(action["format"].(string), v.Load1, v.Load5, v.Load15), true}
+		// Block until other thread will ping you
+		run = <-rec
+	}
+}
+
+// Uptime returns the system uptime as a formatted string
+func Uptime(blockId int, send chan Change, rec chan bool, action map[string]interface{}) {
+	run := true
+	for run {
+		v, _ := host.Uptime()
+		send <- Change{blockId, fmt.Sprintf(action["format"].(string), HumanizeDuration(time.Duration(v)*time.Second)), true}
 		// Block until other thread will ping you
 		run = <-rec
 	}

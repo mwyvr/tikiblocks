@@ -2,6 +2,7 @@ package util
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -30,8 +31,8 @@ type Config struct {
 	Actions    []map[string]interface{}
 }
 
-// Based on "timer" prorty from config file
-// Schedule gothread that will ping other gothreads via send channel
+// Based on "timer" property in the configuration file
+// Schedule gothread will ping other gothreads via send channel
 func Schedule(send chan bool, duration string) {
 	u, err := time.ParseDuration(duration)
 	if err == nil {
@@ -99,39 +100,44 @@ func ReadConfig(configName string) (config Config) {
 	return config
 }
 
-type xRootWriter struct {
+type xPropWriter struct {
 	Connection *xgb.Conn
 	Root       xproto.Window
 }
 
-func (xw *xRootWriter) Write(barText []byte) (n int, err error) {
+func (xw *xPropWriter) Write(barText []byte) (n int, err error) {
 	length := len(barText)
 	xproto.ChangeProperty(xw.Connection, xproto.PropModeReplace, xw.Root, xproto.AtomWmName, xproto.AtomString, 8, uint32(length), barText)
 	return length, nil
 }
 
-func newXRootWriter() *xRootWriter {
+// Implements the Writer interface
+func newXRootWriter() *xPropWriter {
 	x, err := xgb.NewConn()
 	if err != nil {
 		log.Fatal(err)
 	}
 	root := xproto.Setup(x).DefaultScreen(x).Root
 
-	return &xRootWriter{
+	return &xPropWriter{
 		Connection: x,
 		Root:       root,
 	}
 }
 
+// implements the Writer interface
 func newSomebarWriter() io.Writer {
-	var somebar *os.File
+	var (
+		somebar *os.File
+		err     error
+	)
 	runtimeDir := os.Getenv("XDG_RUNTIME_DIR")
 	if runtimeDir == "" {
 		log.Fatal("XDG_RUNTIME_DIR not defined. dbus running?")
 	}
 	outputFn := path.Join(runtimeDir, "somebar-0")
 	for i := 0; i < 100; i++ {
-		somebar, err := os.OpenFile(outputFn, os.O_APPEND|os.O_WRONLY, 0x777)
+		somebar, err = os.OpenFile(outputFn, os.O_APPEND|os.O_WRONLY, 0x777)
 		if err != nil {
 			// somebar may not be up yet
 			time.Sleep(10 * time.Millisecond)
@@ -151,12 +157,35 @@ func SetOutput(fname string) io.Writer {
 		return os.Stdout
 	case "stderr":
 		return os.Stderr
-	case "xsetroot":
+	case "xprop":
 		return newXRootWriter()
 	case "somebar":
 		return newSomebarWriter()
 	default:
-		log.Fatal("Output must be one of stdout, stderr, xsetroot, somebar", fname)
+		log.Fatal("Output must be one of stdout, stderr, xprop, somebar", fname)
 	}
 	return nil
+}
+
+func HumanizeDuration(d time.Duration) string {
+	var s strings.Builder
+
+	day := d / (time.Hour * 24)
+	d -= day * (time.Hour * 24)
+	hour := d / time.Hour
+	d -= hour * time.Hour
+	minute := d / time.Minute
+	d -= minute * time.Minute
+	second := d / time.Second
+	if day > 0 {
+		fmt.Fprintf(&s, "%dd ", day)
+	}
+	if hour > 0 {
+		fmt.Fprintf(&s, "%dh ", hour)
+	}
+	fmt.Fprintf(&s, "%dm ", minute)
+	if hour == 0 && second > 0 {
+		fmt.Fprintf(&s, "%ds", second)
+	}
+	return s.String()
 }
